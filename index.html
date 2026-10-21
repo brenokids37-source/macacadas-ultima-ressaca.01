@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Macacadas: A Última Ressaca</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#100d20;color:white;font-family:monospace;text-align:center}
+h1{font-size:clamp(20px,5vw,32px);color:#ffd34e;margin:16px 6px 4px}
+p{margin:6px}
+#arena{width:100%;max-width:800px;margin:auto;position:relative}
+canvas{display:block;width:100%;image-rendering:pixelated;background:#28234b;touch-action:none}
+.hud{display:flex;justify-content:space-around;gap:8px;padding:10px;font-size:12px}
+.track{height:12px;background:#493b51;width:34vw;max-width:240px;border:2px solid white}
+.fill{height:100%;background:#ff425e;width:100%}
+#enemyBar{background:#ffb52e}
+.controls{display:flex;justify-content:space-around;align-items:center;padding:14px;gap:8px}
+button{font:bold 16px monospace;color:white;background:#453c71;border:2px solid #9e91d9;border-radius:10px;padding:15px 18px;touch-action:manipulation}
+button:active{background:#e84c78}
+#message{color:#ffd34e;min-height:24px}
+</style>
+</head>
+<body>
+<h1>MACACADAS</h1>
+<p>A ÚLTIMA RESSACA</p>
+<div class="hud">
+<div>VOCÊ<div class="track"><div id="hp" class="fill"></div></div></div>
+<div>OPONENTE<div class="track"><div id="ehp" class="fill" style="background:#ffb52e"></div></div></div>
+</div>
+<div id="arena"><canvas id="game" width="400" height="240"></canvas></div>
+<p id="message">Derrote o inimigo!</p>
+<div class="controls">
+<button id="left">◀</button>
+<button id="right">▶</button>
+<button id="jump">PULAR</button>
+<button id="hit">SOCO!</button>
+</div>
+<button id="restart">RECOMEÇAR</button>
+<script>
+const c=document.getElementById('game'),x=c.getContext('2d');
+const hp=document.getElementById('hp'),ehp=document.getElementById('ehp');
+const msg=document.getElementById('message');
+let p,e,keys={},done=false,frame=0;
+function reset(){
+p={x:75,y:175,h:50,hp:100,face:1,jump:0,attack:0};
+e={x:300,y:175,h:50,hp:100,face:-1,attack:0};
+keys={};done=false;frame=0;msg.textContent='Derrote o inimigo!';
+}
+function fighter(a,player){
+x.save();x.translate(a.x,a.y-(a.jump||0));
+x.fillStyle='#171329';x.fillRect(-13,43,28,5);
+x.fillStyle='#dca078';x.fillRect(-9,0,18,18);
+x.fillStyle='#302039';x.fillRect(-10,-3,20,7);
+x.fillStyle='#171329';x.fillRect(-8,7,4,3);
+x.fillRect(4,7,4,3);
+x.fillStyle=player?'#e52742':'#38b9e8';
+x.fillRect(-12,19,24,20);
+if(player){
+x.fillStyle='#111';x.fillRect(-8,24,16,4);
+x.fillStyle='#fff';x.fillRect(-5,24,3,3);
+x.fillStyle='#e52742';x.fillRect(-3,23,5,5);
+}
+x.fillStyle='#29243c';x.fillRect(-11,39,9,9);x.fillRect(3,39,9,9);
+x.fillStyle='#dca078';x.fillRect(a.face===1?8:-16,21,8,7);
+if(a.attack>0){
+x.fillStyle='#ffe66b';x.fillRect(a.face===1?13:-29,20,16,9);
+}
+x.restore();
+}
+function background(){
+x.fillStyle='#28234b';x.fillRect(0,0,400,240);
+x.fillStyle='#46345f';x.fillRect(0,35,400,110);
+for(let i=0;i<8;i++){
+x.fillStyle=i%2?'#ffcb63':'#f48d8d';
+x.fillRect(i*55+8,55,25,35);
+}
+x.fillStyle='#716044';x.fillRect(0,150,400,90);
+x.fillStyle='#a18a5d';
+for(let i=0;i<400;i+=24)x.fillRect(i,150,2,90);
+x.fillStyle='#c9b17c';x.fillRect(0,150,400,3);
+}
+function update(){
+if(!done){
+if(keys.left)p.x=Math.max(15,p.x-2.4);
+if(keys.right)p.x=Math.min(385,p.x+2.4);
+if(p.jump>0)p.jump=Math.max(0,p.jump-3);
+if(Math.abs(p.x-e.x)>35)e.x+=Math.sign(p.x-e.x)*0.8;
+e.face=p.x<e.x?-1:1;p.face=p.x<e.x?-1:1;
+if(e.attack>0)e.attack--;
+if(p.attack>0)p.attack--;
+if(frame%65===0&&Math.abs(p.x-e.x)<48){
+p.hp=Math.max(0,p.hp-8);e.attack=9;
+}
+if(p.hp<=0||e.hp<=0){
+done=true;msg.textContent=e.hp<=0?'VOCÊ VENCEU! 🥊':'VOCÊ PERDEU! Tente de novo!';
+}
+}
+hp.style.width=p.hp+'%';ehp.style.width=e.hp+'%';
+background();
+fighter(p,true);fighter(e,false);
+if(done){
+x.fillStyle='#100d20dd';x.fillRect(50,88,300,55);
+x.fillStyle='#ffd34e';x.font='bold 22px monospace';
+x.textAlign='center';x.fillText(e.hp<=0?'VITÓRIA!':'DERROTA!',200,122);
+}
+frame++;requestAnimationFrame(update);
+}
+function punch(){
+if(done||p.attack>0)return;
+p.attack=9;
+if(Math.abs(p.x-e.x)<65){
+e.hp=Math.max(0,e.hp-14);
+}
+}
+function bind(id,key){
+const b=document.getElementById(id);
+b.addEventListener('pointerdown',ev=>{ev.preventDefault();keys[key]=true});
+for(const ev of ['pointerup','pointercancel','pointerleave'])
+b.addEventListener(ev,()=>keys[key]=false);
+}
+bind('left','left');bind('right','right');
+document.getElementById('jump').addEventListener('pointerdown',()=>{
+if(p.jump===0&&!done)p.jump=35;
+});
+document.getElementById('hit').addEventListener('pointerdown',punch);
+document.getElementById('restart').addEventListener('click',reset);
+reset();update();
+</script>
+</body>
+</html>
