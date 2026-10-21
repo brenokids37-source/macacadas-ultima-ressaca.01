@@ -1,129 +1,181 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Macacadas: A Última Ressaca</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#100d20;color:white;font-family:monospace;text-align:center}
-h1{font-size:clamp(20px,5vw,32px);color:#ffd34e;margin:16px 6px 4px}
-p{margin:6px}
-#arena{width:100%;max-width:800px;margin:auto;position:relative}
-canvas{display:block;width:100%;image-rendering:pixelated;background:#28234b;touch-action:none}
-.hud{display:flex;justify-content:space-around;gap:8px;padding:10px;font-size:12px}
-.track{height:12px;background:#493b51;width:34vw;max-width:240px;border:2px solid white}
-.fill{height:100%;background:#ff425e;width:100%}
-#enemyBar{background:#ffb52e}
-.controls{display:flex;justify-content:space-around;align-items:center;padding:14px;gap:8px}
-button{font:bold 16px monospace;color:white;background:#453c71;border:2px solid #9e91d9;border-radius:10px;padding:15px 18px;touch-action:manipulation}
-button:active{background:#e84c78}
-#message{color:#ffd34e;min-height:24px}
+body{margin:0;background:#100d20;color:white;font-family:monospace;text-align:center;touch-action:manipulation}
+h1{margin:12px 0 2px;color:#ffcc48;font-size:25px;text-shadow:3px 3px #b32635}
+p{margin:4px}
+.hud{display:flex;align-items:center;justify-content:space-around;gap:8px;padding:10px 4px}
+.name{font-weight:bold;font-size:12px;margin-bottom:5px}
+.track{width:35vw;max-width:260px;height:15px;background:#34263f;border:2px solid #fff;transform:skew(-12deg);overflow:hidden}
+.fill{height:100%;width:100%;background:linear-gradient(90deg,#f22,#ffb044);transition:width .15s}
+#ehp{background:linear-gradient(90deg,#ffe34b,#ff8a25)}
+#game{width:100%;max-width:850px;display:block;margin:auto;image-rendering:pixelated;touch-action:none}
+#message{color:#ffd34e;font-size:14px;min-height:20px}
+.controls{display:flex;justify-content:space-around;align-items:center;gap:6px;padding:10px 5px;max-width:600px;margin:auto}
+button{background:#302747;color:white;border:2px solid #9d81c9;border-radius:12px;font:bold 15px monospace;padding:15px 13px;box-shadow:0 4px #171123;touch-action:none}
+button:active{transform:translateY(3px);box-shadow:0 1px #171123;background:#b52d48}
+#restart{padding:10px 22px;margin:0 0 12px}
 </style>
 </head>
 <body>
 <h1>MACACADAS</h1>
 <p>A ÚLTIMA RESSACA</p>
 <div class="hud">
-<div>VOCÊ<div class="track"><div id="hp" class="fill"></div></div></div>
-<div>OPONENTE<div class="track"><div id="ehp" class="fill" style="background:#ffb52e"></div></div></div>
+ <div><div class="name">MACACADAS</div><div class="track"><div id="hp" class="fill"></div></div></div>
+ <div style="font-size:23px;color:#ffda63;font-weight:bold"> <span id="timer">99</span></div>
+ <div><div class="name">ZÉ DO MORRO</div><div class="track"><div id="ehp" class="fill"></div></div></div>
 </div>
-<div id="arena"><canvas id="game" width="400" height="240"></canvas></div>
-<p id="message">Derrote o inimigo!</p>
+<canvas id="game" width="480" height="270"></canvas>
+<div id="message">ROUND 1 — VAI PRA CIMA!</div>
 <div class="controls">
-<button id="left">◀</button>
-<button id="right">▶</button>
-<button id="jump">PULAR</button>
-<button id="hit">SOCO!</button>
+ <button id="left">◀</button><button id="right">▶</button>
+ <button id="jump">PULAR</button><button id="hit">SOCO!</button>
 </div>
 <button id="restart">RECOMEÇAR</button>
 <script>
-const c=document.getElementById('game'),x=c.getContext('2d');
+const c=document.getElementById('game'),g=c.getContext('2d');
 const hp=document.getElementById('hp'),ehp=document.getElementById('ehp');
-const msg=document.getElementById('message');
-let p,e,keys={},done=false,frame=0;
+const msg=document.getElementById('message'),timer=document.getElementById('timer');
+let p,e,keys={},done=false,frame=0,time=99,flash=0,shake=0;
 function reset(){
-p={x:75,y:175,h:50,hp:100,face:1,jump:0,attack:0};
-e={x:300,y:175,h:50,hp:100,face:-1,attack:0};
-keys={};done=false;frame=0;msg.textContent='Derrote o inimigo!';
+ p={x:100,y:210,hp:100,jump:0,attack:0,face:1,walk:0};
+ e={x:365,y:210,hp:100,jump:0,attack:0,face:-1,walk:0};
+ keys={};done=false;frame=0;time=99;flash=0;shake=0;
+ msg.textContent='ROUND 1 — VAI PRA CIMA!';
 }
-function fighter(a,player){
-x.save();x.translate(a.x,a.y-(a.jump||0));
-x.fillStyle='#171329';x.fillRect(-13,43,28,5);
-x.fillStyle='#dca078';x.fillRect(-9,0,18,18);
-x.fillStyle='#302039';x.fillRect(-10,-3,20,7);
-x.fillStyle='#171329';x.fillRect(-8,7,4,3);
-x.fillRect(4,7,4,3);
-x.fillStyle=player?'#e52742':'#38b9e8';
-x.fillRect(-12,19,24,20);
-if(player){
-x.fillStyle='#111';x.fillRect(-8,24,16,4);
-x.fillStyle='#fff';x.fillRect(-5,24,3,3);
-x.fillStyle='#e52742';x.fillRect(-3,23,5,5);
+function rect(x,y,w,h,col){g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),w,h)}
+function bg(){
+let sky=g.createLinearGradient(0,0,0,270);
+sky.addColorStop(0,'#111638');sky.addColorStop(.55,'#7e345a');sky.addColorStop(1,'#f99b54');
+g.fillStyle=sky;g.fillRect(0,0,480,270);
+// distant mountains
+rect(0,110,480,65,'#33274d');
+for(let i=0;i<9;i++){
+let x=i*65-20;
+rect(x,95+(i%3)*10,52,85,'#211e3d');
+rect(x+8,110+(i%3)*10,5,4,'#ffb66c');
 }
-x.fillStyle='#29243c';x.fillRect(-11,39,9,9);x.fillRect(3,39,9,9);
-x.fillStyle='#dca078';x.fillRect(a.face===1?8:-16,21,8,7);
-if(a.attack>0){
-x.fillStyle='#ffe66b';x.fillRect(a.face===1?13:-29,20,16,9);
+// city buildings
+for(let i=0;i<13;i++){
+let x=i*39-5,h=45+(i*23%53);
+rect(x,170-h,32,h,'#201a31');
+for(let j=0;j<3;j++)for(let k=0;k<4;k++)
+if((i+j+k)%3!==0)rect(x+4+j*9,177-h+k*12,4,6,(i+j)%2?'#ffba5a':'#f16b66');
 }
-x.restore();
-}
-function background(){
-x.fillStyle='#28234b';x.fillRect(0,0,400,240);
-x.fillStyle='#46345f';x.fillRect(0,35,400,110);
+// rooftops and party lights
+rect(0,177,480,93,'#30233c');
+rect(0,177,480,5,'#ffbd68');
+for(let i=0;i<480;i+=24){rect(i,190,2,80,'#473047')}
 for(let i=0;i<8;i++){
-x.fillStyle=i%2?'#ffcb63':'#f48d8d';
-x.fillRect(i*55+8,55,25,35);
+rect(i*67+10,185,3,10,'#ffdd75');
+rect(i*67+13,195,3,7,'#f04e69');
 }
-x.fillStyle='#716044';x.fillRect(0,150,400,90);
-x.fillStyle='#a18a5d';
-for(let i=0;i<400;i+=24)x.fillRect(i,150,2,90);
-x.fillStyle='#c9b17c';x.fillRect(0,150,400,3);
+// graffiti wall
+rect(0,140,66,38,'#242036');
+g.fillStyle='#f7a6ba';g.font='bold 8px monospace';
+g.fillText('MACACADAS',3,154);g.fillText('RESSACA!',6,165);
+// ground
+rect(0,224,480,46,'#171a2e');
+rect(0,224,480,3,'#e4a060');
+for(let i=0;i<480;i+=31)rect(i,240,18,2,'#393149');
+rect(275,246,45,2,'#ffb55b');rect(100,258,26,2,'#6e5470');
 }
-function update(){
-if(!done){
-if(keys.left)p.x=Math.max(15,p.x-2.4);
-if(keys.right)p.x=Math.min(385,p.x+2.4);
-if(p.jump>0)p.jump=Math.max(0,p.jump-3);
-if(Math.abs(p.x-e.x)>35)e.x+=Math.sign(p.x-e.x)*0.8;
-e.face=p.x<e.x?-1:1;p.face=p.x<e.x?-1:1;
-if(e.attack>0)e.attack--;
-if(p.attack>0)p.attack--;
-if(frame%65===0&&Math.abs(p.x-e.x)<48){
-p.hp=Math.max(0,p.hp-8);e.attack=9;
+// Desenho pixelado de lutador
+function fighter(a,player){
+let bob=Math.abs(Math.sin(a.walk*.18))*2;
+let y=a.y-(a.jump||0)-bob,x=a.x;
+g.save();g.translate(x,y);
+if(a.face<0)g.scale(-1,1);
+rect(-16,2,32,5,'#11101e');
+// pernas e tênis
+rect(-12,-24,10,25,'#252338');rect(4,-24,10,25,'#252338');
+rect(-15,-3,13,5,player?'#f2e8e1':'#e5b34e');
+rect(3,-3,15,5,player?'#f2e8e1':'#e5b34e');
+rect(-14,1,13,4,'#dc3448');rect(4,1,14,4,'#dc3448');
+// braços
+rect(-20,-58,9,28,'#d69b76');rect(12,-58,9,27,'#d69b76');
+rect(-22,-62,12,10,'#e8b18a');rect(12,-62,12,10,'#e8b18a');
+// torso
+rect(-15,-67,30,39,player?'#c91e37':'#328db4');
+if(player){
+rect(-15,-59,30,5,'#161827');rect(-15,-48,30,5,'#161827');
+rect(-4,-61,8,3,'#fff1cb');
+rect(-5,-56,10,10,'#f5d4aa');
+rect(-4,-54,3,3,'#d62839');rect(1,-54,3,3,'#d62839');
+}else{
+rect(-15,-61,30,5,'#20243a');
 }
-if(p.hp<=0||e.hp<=0){
-done=true;msg.textContent=e.hp<=0?'VOCÊ VENCEU! 🥊':'VOCÊ PERDEU! Tente de novo!';
+// pescoço e cabeça
+rect(-6,-75,12,10,'#d69b76');
+rect(-11,-91,23,20,'#d69b76');
+rect(-12,-93,24,8,'#21182c');
+rect(-11,-86,5,3,'#171522');rect(5,-86,5,3,'#171522');
+rect(1,-77,9,3,'#40212b');
+if(!player){rect(-12,-96,24,5,'#171725');rect(-5,-101,16,6,'#171725')}
+if(a.attack>0){
+rect(18,-63,24,10,'#ffde62');rect(34,-66,5,16,'#fff4b1');
+rect(24,-70,7,5,'#ff8b54');
 }
+g.restore();
 }
-hp.style.width=p.hp+'%';ehp.style.width=e.hp+'%';
-background();
-fighter(p,true);fighter(e,false);
+function draw(){
+g.save();
+if(shake>0){g.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.7}
+bg();fighter(p,true);fighter(e,false);
+if(flash>0){
+rect(0,0,480,270,'#fff8d0');flash--;
+}
 if(done){
-x.fillStyle='#100d20dd';x.fillRect(50,88,300,55);
-x.fillStyle='#ffd34e';x.font='bold 22px monospace';
-x.textAlign='center';x.fillText(e.hp<=0?'VITÓRIA!':'DERROTA!',200,122);
+rect(60,88,360,66,'#111024');
+g.strokeStyle='#ffcf4b';g.lineWidth=3;g.strokeRect(60,88,360,66);
+g.fillStyle='#ffdb61';g.font='bold 27px monospace';g.textAlign='center';
+g.fillText(e.hp<=0?'VOCÊ VENCEU!':p.hp<=0?'DERROTA!':'TEMPO ESGOTADO!',240,130);
 }
-frame++;requestAnimationFrame(update);
+g.restore();
 }
 function punch(){
 if(done||p.attack>0)return;
-p.attack=9;
-if(Math.abs(p.x-e.x)<65){
-e.hp=Math.max(0,e.hp-14);
+p.attack=10;
+if(Math.abs(p.x-e.x)<72){
+e.hp=Math.max(0,e.hp-13);flash=2;shake=5;
+msg.textContent='POW! ACERTOU O GOLPE!';
+if(e.hp===0){done=true;msg.textContent='VOCÊ VENCEU!'}
 }
+}
+function update(){
+if(!done){
+if(keys.left){p.x=Math.max(25,p.x-2.5);p.walk++}
+if(keys.right){p.x=Math.min(455,p.x+2.5);p.walk++}
+if(p.jump>0)p.jump=Math.max(0,p.jump-3);
+if(Math.abs(p.x-e.x)>43)e.x+=Math.sign(p.x-e.x)*.85;
+e.face=p.x<e.x?-1:1;p.face=p.x<e.x?1:-1;
+e.walk++;if(e.attack>0)e.attack--;if(p.attack>0)p.attack--;
+if(frame%70===0&&Math.abs(p.x-e.x)<58){
+p.hp=Math.max(0,p.hp-8);e.attack=10;shake=3;
+msg.textContent='O OPONENTE ATACOU!';
+}
+if(frame%60===0&&frame>0)time=Math.max(0,time-1);
+if(p.hp<=0||time<=0){done=true;msg.textContent=p.hp<=0?'DERROTA! TENTE NOVAMENTE':'TEMPO ESGOTADO!'}
+}
+hp.style.width=p.hp+'%';ehp.style.width=e.hp+'%';timer.textContent=time;
+draw();frame++;requestAnimationFrame(update);
 }
 function bind(id,key){
 const b=document.getElementById(id);
 b.addEventListener('pointerdown',ev=>{ev.preventDefault();keys[key]=true});
-for(const ev of ['pointerup','pointercancel','pointerleave'])
-b.addEventListener(ev,()=>keys[key]=false);
+['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[key]=false));
 }
 bind('left','left');bind('right','right');
-document.getElementById('jump').addEventListener('pointerdown',()=>{
-if(p.jump===0&&!done)p.jump=35;
+document.getElementById('jump').addEventListener('pointerdown',ev=>{
+ev.preventDefault();if(!done&&p.jump===0)p.jump=39;
 });
-document.getElementById('hit').addEventListener('pointerdown',punch);
+document.getElementById('hit').addEventListener('pointerdown',ev=>{ev.preventDefault();punch()});
 document.getElementById('restart').addEventListener('click',reset);
 reset();update();
 </script>
