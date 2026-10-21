@@ -1,0 +1,28 @@
+# Macacadas: A Última Ressaca — protótipo mobile
+
+## Arquivos
+- `index.html`: jogo HTML5 completo, sem bibliotecas externas.
+- `package.json` e `capacitor.config.json`: configuração inicial para empacotar a página como aplicativo Android.
+- `.github/workflows/android-apk.yml`: compilação de APK de teste em nuvem via GitHub Actions.
+- `LEIA-ME.txt`: este guia.
+
+## Testar o jogo no Android sem compilar
+1. Baixe e extraia o ZIP no celular.
+2. Abra `index.html` no Chrome ou em um navegador que permita abrir arquivos locais.
+3. Use o celular na horizontal. Toque na tela para iniciar e use os controles virtuais.
+
+## Gerar APK usando apenas o celular
+O APK ainda não está incluído: precisa ser compilado. O fluxo incluído usa o GitHub Actions para compilar em nuvem, então você não precisa de um PC, mas precisa de uma conta GitHub e fazer a configuração pelo navegador do Android.
+
+1. Entre em `github.com` pelo navegador do celular e crie um repositório vazio chamado `macacadas-ultima-ressaca`.
+2. Envie os arquivos deste ZIP para a raiz do repositório, incluindo a pasta oculta `.github/workflows/` e o arquivo `android-apk.yml`. Se o site móvel dificultar o envio de pastas, use a opção de enviar arquivos pelo navegador em modo para computador ou um cliente Git compatível com Android.
+3. Na página do repositório, abra **Actions** e habilite workflows se o GitHub pedir.
+4. Selecione **Construir APK Android** e toque em **Run workflow**. Também pode iniciar automaticamente após enviar os arquivos para a branch `main`.
+5. Quando o workflow terminar com sucesso, abra a execução, vá até **Artifacts** e baixe `macacadas-apk-debug`.
+6. Extraia o arquivo baixado e instale `app-debug.apk`. Talvez seja necessário permitir instalação de apps pelo navegador/gerenciador de arquivos.
+
+## Limitações importantes
+- Este é um protótipo de demonstração, não um jogo final.
+- O personagem atual é um sprite provisório, não um retrato fiel. Envie novamente uma foto de referência para podermos personalizá-lo.
+- O workflow é uma configuração inicial de compilação e ainda não foi executado ou verificado nesta entrega; se o GitHub reportar um erro, envie uma captura da tela e ajustaremos.
+- APK debug serve para teste local; publicação na Play Store exige etapas adicionais e assinatura apropriada.
